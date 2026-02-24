@@ -664,6 +664,9 @@ def run_guardian():
                     continue
 
                 schedule = time_schedule
+        except Exception:
+            pass
+
             if CURRENT_MODE == "学习模式":
                 schedule = MODE_CONFIGS.get("学习模式", time_schedule)
             status, _ = check_time(schedule)
