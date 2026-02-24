@@ -196,7 +196,7 @@ class PasswordDialog(tk.Toplevel):
         self.parent.wait_window(self)
         return self.result
 
-def ask_password_securely(title, prompt, timeout=180):
+def ask_password_securely(title, prompt, timeout=120):
     # 使用全局隐藏窗口，避免闪烁
     global root_window
     try:
@@ -659,7 +659,7 @@ def run_guardian():
                     def ask_password_in_thread():
                         user_input = ask_password_securely("🚨 访问受限 🚨", 
                                                            "已进入休息时段，请在3分钟内输入密码解锁：", 
-                                                           timeout=180)
+                                                           timeout=120)
                         result_queue.put(user_input)
 
                     password_thread = threading.Thread(target=ask_password_in_thread)
@@ -667,7 +667,7 @@ def run_guardian():
                     password_thread.start()
 
                     try:
-                        user_input_result = result_queue.get(timeout=180)
+                        user_input_result = result_queue.get(timeout=120)
                     except:
                         user_input_result = "timeout"
 
