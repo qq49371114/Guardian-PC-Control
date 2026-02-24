@@ -422,8 +422,7 @@ def show_bonus_popup():
         if remaining > 0:
             bonus_message += f"\n🎉 还可获得 {remaining} 分钟奖励！"
         else:
-            bonus_message += "
-🎊 本周奖励已满！"
+            bonus_message += "\n🎊 本周奖励已满！"
         
         show_msg("🎁 您的奖励状态", bonus_message)
         
@@ -664,17 +663,14 @@ def run_guardian():
                     continue
 
                 schedule = time_schedule
-        except Exception:
-            pass
-
-            if CURRENT_MODE == "学习模式":
-                schedule = MODE_CONFIGS.get("学习模式", time_schedule)
-            status, _ = check_time(schedule)
+                if CURRENT_MODE == "学习模式":
+                    schedule = MODE_CONFIGS.get("学习模式", time_schedule)
+                status, _ = check_time(schedule)
                 if status == "FORBIDDEN":
                     result_queue = Queue()
                     def ask_password_in_thread():
                         user_input = ask_password_securely("🚨 访问受限 🚨", 
-                                                           "已进入休息时段，请在3分钟内输入密码解锁：", 
+                                                           "已进入休息时段，请在2分钟内输入密码解锁：", 
                                                            timeout=120)
                         result_queue.put(user_input)
 
