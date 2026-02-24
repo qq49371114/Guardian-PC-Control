@@ -476,7 +476,8 @@ def lock_system_time():
         write_log("系统时间锁定机制已启动")
     except Exception as e:
         write_log(f"锁定系统时间失败: {e}", "WARN")
-\ndef check_time(schedule):
+
+def check_time(schedule):
     """根据传入的【白名单】时间表检查当前状态 (V21.0 人性化显示版)"""
     global REMINDER_SENT
     if not schedule:
