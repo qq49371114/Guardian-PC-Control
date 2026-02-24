@@ -663,7 +663,10 @@ def run_guardian():
                     time.sleep(60)
                     continue
 
-                schedule = time_schedule\n            if CURRENT_MODE == "学习模式":\n                schedule = MODE_CONFIGS.get("学习模式", time_schedule)\n            status, _ = check_time(schedule)
+                schedule = time_schedule
+            if CURRENT_MODE == "学习模式":
+                schedule = MODE_CONFIGS.get("学习模式", time_schedule)
+            status, _ = check_time(schedule)
                 if status == "FORBIDDEN":
                     result_queue = Queue()
                     def ask_password_in_thread():
