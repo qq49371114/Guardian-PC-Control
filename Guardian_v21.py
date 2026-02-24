@@ -199,15 +199,25 @@ class PasswordDialog(tk.Toplevel):
         return self.result
 
 def ask_password_securely(title, prompt, timeout=180):
-    root = tk.Tk()
-    root.withdraw()
-    root.attributes("-topmost", True)
-    dialog = PasswordDialog(root, title, prompt, timeout)
-    result = dialog.get_result()
+    # 使用全局隐藏窗口，避免闪烁
+    global root_window
     try:
-        root.destroy()
-    except tk.TclError:
-        pass
+        # 尝试使用已有窗口
+        if 'root_window' in globals() and root_window:
+            parent = root_window
+        else:
+            # 如果没有，创建新的隐藏窗口
+            parent = tk.Tk()
+            parent.withdraw()
+            parent.attributes("-topmost", True)
+    except:
+        parent = tk.Tk()
+        parent.withdraw()
+        parent.attributes("-topmost", True)
+    
+    dialog = PasswordDialog(parent, title, prompt, timeout)
+    result = dialog.get_result()
+    # 不销毁窗口，保持隐藏状态
     return result
 
 def show_msg(title, text, style=0):
@@ -687,6 +697,16 @@ def run_guardian():
 
 
 if __name__ == "__main__":
+    # 隐藏程序窗口，只在弹窗时显示
+    try:
+        # 创建隐藏的主窗口（用于承载弹窗）
+        root = tk.Tk()
+        root.withdraw()  # 隐藏主窗口
+        root.attributes("-topmost", True)  # 置顶
+        root.iconbitmap(default='')  # 不显示任务栏图标
+    except:
+        pass
+    
     try:
         mutex = ctypes.windll.kernel32.CreateMutexW(None, True, "GuardianPhoenixMutex")
         if ctypes.windll.kernel32.GetLastError() == 183:
