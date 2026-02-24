@@ -355,6 +355,15 @@ def take_screenshot_auto():
         write_log(f"自动截图失败: {e}", "ERROR")
 
 def init_bonus_file():
+    """初始化奖励文件"""
+    try:
+        if not os.path.exists(BONUS_TIME_FILE):
+            with open(BONUS_TIME_FILE, 'w', 'utf-8') as f:
+                json.dump({"weekly_bonus_minutes": 0, "max_bonus_minutes": 60, "total_earned_minutes": 0, "last_week_check_date": "", "weekly_completion_tasks": {}}, f)
+            write_log("奖励配置文件已初始化")
+    except Exception as e:
+        write_log(f"初始化奖励文件失败: {e}", "ERROR")
+
 # =========================================================
 # 🎁 V21.0 每周五记录函数
 # =========================================================
