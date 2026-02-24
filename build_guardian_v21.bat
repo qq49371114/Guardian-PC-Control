@@ -1,19 +1,19 @@
-
-REM Guardian V21.0 æ‰“åŒ…è„šæœ¬
+@echo off
+chcp 65001 >nul
 echo ==============================================
-echo Guardian V21.0 æ‰“åŒ…å·¥å…·
+echo Guardian V21.0 ´ò°ü¹¤¾ß
 echo ==============================================
 
 echo.
-echo [æ­¥éª¤1] å®‰è£…ä¾èµ–...
+echo [²½Öè1] ¼ì²é²¢°²×°ÒÀÀµ...
 pip install ntplib Pillow requests wmi pyinstaller
 
 echo.
-echo [æ­¥éª¤2] æ‰“åŒ…æˆexe...
+echo [²½Öè2] ¿ªÊ¼´ò°ü...
 pyinstaller Guardian_v21.spec
 
 echo.
-echo [æ­¥éª¤3] å®Œæˆï¼
-echo   æ‰“åŒ…åçš„exeæ–‡ä»¶ä½äº: dist\Guardian_V21.exe
+echo [²½Öè3] Íê³É£¡
+echo   ´ò°üºóµÄexeÎÄ¼şÎ»ÓÚ: dist\Guardian_V21.exe
 echo.
  pause
