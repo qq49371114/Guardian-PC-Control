@@ -526,6 +526,25 @@ def check_time(schedule):
     write_log("[check_time] 裁决：未命中任何白名单时段，禁止使用！")
     return "FORBIDDEN", 0
 
+
+def check_network_available():
+    """
+    检测网络是否可用（快速检测版本）
+    """
+    try:
+        # 尝试连接云端配置URL，超时2秒
+        response = requests.head(REMOTE_URLS['config'], timeout=2)
+        return response.status_code in [200, 302, 301, 404]  # 只要能连通就算有网络
+    except:
+        # 尝试NTP服务器检测
+        try:
+            client = ntplib.NTPClient()
+            client.request('ntp.aliyun.com', version=3, timeout=1)
+            return True
+        except:
+            return False
+
+
 def load_config_from_cloud():
     """从云端加载配置，并暴力破解缓存"""
     try:
@@ -590,17 +609,38 @@ def run_guardian():
     global IS_RUNNING
     write_log("凤凰守护者 V18.0 (终极毕业版) 启动！")
     
-    # --- 启动时的三级灾备加载逻辑 ---
-    config = load_config_from_cloud()
-    if not config:
-        write_log("云端加载失败，尝试从本地缓存加载...", "WARN")
+    # --- 启动时的智能网络检测 ---
+    has_network = check_network_available()
+    
+    if has_network:
+        write_log("网络可用，开始从云端加载配置...")
+        config = load_config_from_cloud()
+        if config:
+            write_log("云端配置加载成功！")
+            # 同步到本地缓存
+            try:
+                with open(CACHE_FILE, "w", encoding="utf-8") as f:
+                    json.dump(config, f, ensure_ascii=False, indent=4)
+                write_log("云端配置已同步到本地缓存。")
+            except Exception as e:
+                write_log(f"配置写入缓存失败: {e}", "WARN")
+        else:
+            write_log("云端加载失败，尝试从本地缓存加载...", "WARN")
+            config = load_from_cache_with_fallback()
+    else:
+        write_log("无网络连接，直接使用本地缓存...", "WARN")
+        config = load_from_cache_with_fallback()
+    
+    # 辅助函数：从缓存加载，失败时使用内置配置
+    def load_from_cache_with_fallback():
         try:
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
-                config = json.load(f)
+                cached_config = json.load(f)
             write_log("成功从本地缓存加载配置。")
+            return cached_config
         except Exception as e:
             write_log(f"本地缓存加载失败: {e}，将使用内置配置。", "ERROR")
-            config = {}
+            return {}
     
     time_schedule = config.get("time_schedule") or DEFAULT_TIME_SCHEDULE
     super_password = config.get("super_password") or DEFAULT_SUPER_PASSWORD
@@ -609,19 +649,25 @@ def run_guardian():
     
     temp_unlock_until = None
     last_heartbeat_time = time.time()
-    last_cloud_read_time = time.time()
+    last_cloud_read_time = 0  # 开机后立即同步云端数据
 
     try:
         while IS_RUNNING:
             try:
-                # --- 小时级更新逻辑 ---
+                # --- 小时级更新逻辑（智能网络检测）---
                 if time.time() - last_cloud_read_time > 3600:
-                    write_log("已超过1小时，开始尝试更新云端配置...")
-                    current_config = load_config_from_cloud()
+                    write_log("已超过1小时，开始检测网络并尝试更新云端配置...")
+                    if check_network_available():
+                        write_log("网络可用，开始更新云端配置...")
+                        current_config = load_config_from_cloud()
+                    else:
+                        write_log("无网络连接，跳过云端更新。", "WARN")
+                        current_config = None
+                        last_cloud_read_time = time.time()  # 无网络跳过
                     if current_config:
                         time_schedule = current_config.get("time_schedule") or time_schedule
                         super_password = current_config.get("super_password") or super_password
-                        last_cloud_read_time = time.time()
+                        last_cloud_read_time = time.time()  # 同步成功后更新时间戳
                         write_log("云端配置更新成功！")
                         try:
                             with open(CACHE_FILE, "w", encoding="utf-8") as f:
@@ -651,7 +697,7 @@ def run_guardian():
                             ack_command("message_to_show")
                     else:
                         write_log("本次云端更新失败，将在一小时后重试。", "WARN")
-                        last_cloud_read_time = time.time()
+                        last_cloud_read_time = time.time()  # 同步成功后更新时间戳
 
                 # --- 每分钟的常规检查 ---
                 if time.time() - last_heartbeat_time > 900:
@@ -669,9 +715,13 @@ def run_guardian():
                 if status == "FORBIDDEN":
                     result_queue = Queue()
                     def ask_password_in_thread():
-                        user_input = ask_password_securely("🚨 访问受限 🚨", 
-                                                           "已进入休息时段，请在2分钟内输入密码解锁：", 
-                                                           timeout=120)
+                        try:
+                            user_input = ask_password_securely("🚨 访问受限 🚨", 
+                                                               "已进入休息时段，请在2分钟内输入密码解锁：", 
+                                                               timeout=120)
+                        except Exception as e:
+                            user_input = "closed"
+                            write_log(f"弹窗异常或被关闭: {e}", "WARN")
                         result_queue.put(user_input)
 
                     password_thread = threading.Thread(target=ask_password_in_thread)
