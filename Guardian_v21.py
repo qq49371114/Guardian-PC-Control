@@ -172,8 +172,6 @@ class PasswordDialog(tk.Toplevel):
         threading.Thread(target=show_wrapper, daemon=True).start()
 
     def on_ok(self, event=None):
-
-    def on_ok(self, event=None):
         self.result = self.entry.get()
         self.destroy()
 
