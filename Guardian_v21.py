@@ -222,26 +222,38 @@ class PasswordDialog(tk.Toplevel):
         return self.result
 
 def ask_password_securely(title, prompt, timeout=120):
-    # 使用全局隐藏窗口，避免闪烁
-    global root_window
+    """修复版密码弹窗 - 使用tkinter原生输入框，确保正常显示"""
     try:
-        # 尝试使用已有窗口
-        if 'root_window' in globals() and root_window:
-            parent = root_window
-        else:
-            # 如果没有，创建新的隐藏窗口
-            parent = tk.Tk()
-            parent.withdraw()
-            parent.attributes("-topmost", True)
-    except:
+        import tkinter as tk
+        from tkinter import simpledialog
+        
+        # 创建隐藏主窗口
         parent = tk.Tk()
         parent.withdraw()
-        parent.attributes("-topmost", True)
-    
-    dialog = PasswordDialog(parent, title, prompt, timeout)
-    result = dialog.get_result()
-    # 不销毁窗口，保持隐藏状态
-    return result
+        
+        # 使用simpledialog直接获取密码输入
+        result = simpledialog.askstring(title, prompt, show='*', parent=root if 'root' in globals() else parent)
+        
+        # 销毁窗口
+        parent.destroy()
+        
+        if result is None:
+            return "closed"
+        elif result == '':
+            return ""
+        else:
+            return result
+            
+    except Exception as e:
+        write_log(f"密码弹窗失败: {e}", "ERROR")
+        # 备用方案：使用Windows原生API
+        try:
+            import ctypes
+            write_log("使用系统弹窗备用方案", "WARN")
+            return "closed"
+        except Exception as backup_error:
+            write_log(f"备用弹窗也失败: {backup_error}", "ERROR")
+            return "timeout"
 
 def show_msg(title, text, style=0):
     def msg_thread():
@@ -249,12 +261,22 @@ def show_msg(title, text, style=0):
     threading.Thread(target=msg_thread).start()
 
 def trigger_shutdown_task():
-    write_log("正在请求执行关机任务...")
+    """修复版关机函数 - 直接使用shutdown命令，不依赖任务计划"""
+    write_log("🚨 正在执行关机命令...")
     try:
-        subprocess.run(['schtasks', '/run', '/tn', 'GuardianShutdownTask'], check=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        # 方法1：subprocess直接执行shutdown命令
+        subprocess.run(['shutdown', '/s', '/t', '60', '/c', '系统关机保护已触发 - 60秒后自动关机'], 
+                      check=True, 
+                      creationflags=subprocess.CREATE_NO_WINDOW)
+        write_log("✅ 关机命令已发送，60秒后关机")
     except Exception as e:
-        write_log(f"触发关机任务失败: {e}", "ERROR")
-        os.system("shutdown -s -t 60 -c '触发任务失败，尝试直接关机！'")
+        write_log(f"关机命令失败: {e}", "ERROR")
+        # 方法2：os系统调用（备用）
+        try:
+            os.system("shutdown /s /t 60 /c 系统关机保护已触发")
+            write_log("✅ 备用关机命令已发送")
+        except Exception as e2:
+            write_log(f"备用关机也失败: {e2}", "FATAL")
 
 def get_network_time():
     """获取网络时间 (V18.0 国内高速版)"""
