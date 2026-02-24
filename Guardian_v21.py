@@ -421,9 +421,11 @@ def show_bonus_popup():
         max_limit = bonus_status.get('每周上限(分钟)', 60)
         remaining = max_limit - total_earned
         if remaining > 0:
-            bonus_message += f"\n🎉 还可获得 {remaining} 分钟奖励！"
+            bonus_message += f"
+🎉 还可获得 {remaining} 分钟奖励！"
         else:
-            bonus_message += "\n🎊 本周奖励已满！"
+            bonus_message += "
+🎊 本周奖励已满！"
         
         show_msg("🎁 您的奖励状态", bonus_message)
         
